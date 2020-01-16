@@ -64,7 +64,7 @@ class IncrementalAndroidTestProject extends AndroidTestProject {
 
     static final SANTA_TRACKER_JAVA = new IncrementalAndroidTestProject(
         templateName: 'santaTrackerAndroidJavaBuild',
-        memory: '1g',
+        memory: '4g',
         pathToChange: 'village/src/main/java/com/google/android/apps/santatracker/village/SnowFlake.java',
         taskToRunForChange: ':santa-tracker:assembleDebug'
     )
