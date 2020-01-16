@@ -20,6 +20,7 @@ import org.gradle.internal.scan.config.fixtures.GradleEnterprisePluginSettingsFi
 import org.gradle.performance.AbstractCrossVersionGradleProfilerPerformanceTest
 import org.gradle.performance.categories.SlowPerformanceRegressionTest
 import org.gradle.profiler.BuildMutator
+import org.gradle.profiler.ScenarioContext
 import org.gradle.profiler.mutations.AbstractCleanupMutator
 import org.gradle.profiler.mutations.ClearArtifactTransformCacheMutator
 import org.junit.experimental.categories.Category
@@ -132,7 +133,7 @@ class RealLifeAndroidBuildPerformanceTest extends AbstractCrossVersionGradleProf
         runner.addBuildMutator { invocationSettings ->
             new BuildMutator() {
                 @Override
-                void beforeScenario() {
+                void beforeScenario(ScenarioContext context) {
                     GradleEnterprisePluginSettingsFixture.applyEnterprisePlugin(new File(invocationSettings.projectDir, "settings.gradle"))
                 }
             }
