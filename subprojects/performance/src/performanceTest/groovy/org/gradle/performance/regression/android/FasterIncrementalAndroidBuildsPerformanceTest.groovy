@@ -78,6 +78,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
     protected void defaultSpec(BuildExperimentSpec.Builder builder) {
         if (builder instanceof GradleBuildExperimentSpec.GradleBuilder) {
             builder.invocation.args('-Dcom.android.build.gradle.overrideVersionCheck=true')
+            builder.invocation.useToolingApi()
         }
     }
 
