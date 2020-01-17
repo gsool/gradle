@@ -53,6 +53,7 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         def results = runner.run()
         then:
         results
+        false // Fail, so the log is archived
 
         where:
         testProject << [SANTA_TRACKER_KOTLIN, SANTA_TRACKER_JAVA]
