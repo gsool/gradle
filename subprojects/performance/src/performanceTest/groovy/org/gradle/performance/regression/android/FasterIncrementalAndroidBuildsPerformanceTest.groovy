@@ -35,36 +35,35 @@ import static org.gradle.performance.regression.android.IncrementalAndroidTestPr
 @Category(PerformanceExperiment)
 class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPerformanceTest {
 
-    @Unroll
-    def "faster incremental build on #testProject (build comparison)"() {
-        given:
+    def setup() {
         runner.testGroup = "incremental android changes"
-        def defaultArgs = ["-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan"]
+    }
 
-        // Kotlin is not supported for instant execution
-        def optimizations = testProject == SANTA_TRACKER_KOTLIN
-            ? [
-                "no optimizations": EnumSet.noneOf(Optimization),
-                "VFS retention": EnumSet.of(Optimization.VFS_RETENTION)
-            ]
-            : [
-                "no optimizations": EnumSet.noneOf(Optimization),
-                "VFS retention": EnumSet.of(Optimization.VFS_RETENTION),
-                "instant execution": EnumSet.of(Optimization.INSTANT_EXECUTION),
-                "all optimizations": EnumSet.allOf(Optimization)
-            ]
-
-        optimizations.each { name, Set<Optimization> enabledOptimizations ->
-            runner.buildSpec {
-                testProject.configureForNonAbiChange(it)
-                passChangedFile(it, testProject)
-                invocation.args(*defaultArgs, *enabledOptimizations*.argument)
+    @Unroll
+    def "faster non-abi change on #testProject (build comparison)"() {
+        given:
+        supportedOptimizations(testProject).each { name, Set<Optimization> enabledOptimizations ->
+            buildSpecForSupportedOptimizations(testProject) {
+                testProject.configureForNonAbiChange(delegate)
                 displayName("non abi change (${name})")
             }
-            runner.buildSpec {
-                testProject.configureForAbiChange(it)
-                passChangedFile(it, testProject)
-                invocation.args(*defaultArgs, *enabledOptimizations*.argument)
+        }
+
+        when:
+        def results = runner.run()
+        then:
+        results
+
+        where:
+        testProject << [SANTA_TRACKER_KOTLIN, SANTA_TRACKER_JAVA]
+    }
+
+    @Unroll
+    def "faster abi-change on #testProject (build comparison)"() {
+        given:
+        supportedOptimizations(testProject).each { name, Set<Optimization> enabledOptimizations ->
+            buildSpecForSupportedOptimizations(testProject) {
+                testProject.configureForAbiChange(delegate)
                 displayName("abi change (${name})")
             }
         }
@@ -78,10 +77,34 @@ class FasterIncrementalAndroidBuildsPerformanceTest extends AbstractCrossBuildPe
         testProject << [SANTA_TRACKER_KOTLIN, SANTA_TRACKER_JAVA]
     }
 
+    private void buildSpecForSupportedOptimizations(IncrementalAndroidTestProject testProject, @DelegatesTo(GradleBuildExperimentSpec.GradleBuilder) Closure scenarioConfiguration) {
+        runner.buildSpec {
+            passChangedFile(delegate, testProject)
+            invocation.args(*enabledOptimizations*.argument)
+            delegate.with(scenarioConfiguration)
+        }
+    }
+
+    private static Map<String, Set<Optimization>> supportedOptimizations(IncrementalAndroidTestProject testProject) {
+        // Kotlin is not supported for instant execution
+        return testProject == SANTA_TRACKER_KOTLIN
+            ? [
+            "no optimizations": EnumSet.noneOf(Optimization),
+            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION)
+        ]
+            : [
+            "no optimizations": EnumSet.noneOf(Optimization),
+            "VFS retention": EnumSet.of(Optimization.VFS_RETENTION),
+            "instant execution": EnumSet.of(Optimization.INSTANT_EXECUTION),
+            "all optimizations": EnumSet.allOf(Optimization)
+        ]
+    }
+
     @Override
     protected void defaultSpec(BuildExperimentSpec.Builder builder) {
         if (builder instanceof GradleBuildExperimentSpec.GradleBuilder) {
             builder.invocation.args('-Dcom.android.build.gradle.overrideVersionCheck=true')
+            builder.invocation.args("-Dorg.gradle.workers.max=8", "--no-build-cache", "--no-scan")
             builder.invocation.useToolingApi()
             builder.addBuildMutator { InvocationSettings invocationSettings ->
                 new ClearInstantExecutionStateMutator(invocationSettings.projectDir, AbstractCleanupMutator.CleanupSchedule.SCENARIO)
