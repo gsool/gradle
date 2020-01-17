@@ -38,13 +38,17 @@ class AndroidTestProject {
 
     void configure(GradleProfilerCrossVersionPerformanceTestRunner runner) {
         runner.testProject = templateName
-        runner.gradleOpts = ["-Xms$memory", "-Xmx$memory"]
+        if (memory) {
+            runner.gradleOpts = ["-Xms$memory", "-Xmx$memory"]
+        }
     }
 
     void configure(GradleBuildExperimentSpec.GradleBuilder builder) {
         builder.projectName(templateName)
         builder.invocation {
-            gradleOpts("-Xms$memory", "-Xmx$memory")
+            if (memory) {
+                gradleOpts("-Xms$memory", "-Xmx$memory")
+            }
         }
     }
 
@@ -64,7 +68,6 @@ class IncrementalAndroidTestProject extends AndroidTestProject {
 
     static final SANTA_TRACKER_JAVA = new IncrementalAndroidTestProject(
         templateName: 'santaTrackerAndroidJavaBuild',
-        memory: '4g',
         pathToChange: 'village/src/main/java/com/google/android/apps/santatracker/village/SnowFlake.java',
         taskToRunForChange: ':santa-tracker:assembleDebug'
     )
